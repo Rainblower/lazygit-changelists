@@ -150,7 +150,7 @@ func TestFileTreeSortOrderConfig(t *testing.T) {
 			userConfig.Gui.FileTreeSortOrder = s.sortOrder
 			userConfig.Gui.FileTreeSortCaseSensitive = s.caseSensitive
 			cmn := common.NewDummyCommonWithUserConfigAndAppState(userConfig, nil)
-			tree := NewFileTree(func() []*models.File { return files }, cmn, true)
+			tree := NewFileTree(func() []*models.File { return files }, nil, cmn, true)
 			tree.SetTree()
 
 			paths := make([]string, tree.Len())

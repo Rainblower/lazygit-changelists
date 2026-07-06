@@ -1,15 +1,18 @@
 package presentation
 
 import (
+	"fmt"
 	"strings"
 
 	"github.com/gookit/color"
 	"github.com/jesseduffield/lazygit/pkg/commands/models"
 	"github.com/jesseduffield/lazygit/pkg/commands/patch"
 	"github.com/jesseduffield/lazygit/pkg/config"
+	"github.com/jesseduffield/lazygit/pkg/gui/changelists"
 	"github.com/jesseduffield/lazygit/pkg/gui/filetree"
 	"github.com/jesseduffield/lazygit/pkg/gui/presentation/icons"
 	"github.com/jesseduffield/lazygit/pkg/gui/style"
+	"github.com/jesseduffield/lazygit/pkg/i18n"
 	"github.com/jesseduffield/lazygit/pkg/theme"
 	"github.com/jesseduffield/lazygit/pkg/utils"
 )
@@ -18,6 +21,22 @@ const (
 	EXPANDED_ARROW  = "▼"
 	COLLAPSED_ARROW = "▶"
 )
+
+// ChangelistHeaderLine renders the section header shown above the files of a
+// changelist group. The active changelist (the one new files are assigned to)
+// is highlighted so it's easy to see where staging new work will land.
+func ChangelistHeaderLine(name string, active bool, tr *i18n.TranslationSet) string {
+	displayName := name
+	if name == changelists.DefaultName {
+		displayName = tr.DefaultChangelistName
+	}
+
+	label := fmt.Sprintf("--- %s ---", displayName)
+	if active {
+		return style.FgYellow.SetBold().Sprint(label)
+	}
+	return style.FgCyan.Sprint(label)
+}
 
 func RenderFileTree(
 	tree filetree.IFileTree,

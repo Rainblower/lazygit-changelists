@@ -5,6 +5,7 @@ import (
 
 	"github.com/jesseduffield/lazygit/pkg/commands/models"
 	"github.com/jesseduffield/lazygit/pkg/common"
+	"github.com/jesseduffield/lazygit/pkg/gui/changelists"
 	"github.com/jesseduffield/lazygit/pkg/gui/types"
 	"github.com/samber/lo"
 )
@@ -55,6 +56,7 @@ type IFileTree interface {
 
 type FileTree struct {
 	getFiles       func() []*models.File
+	getChangelists func() *changelists.Set
 	tree           *Node[models.File]
 	showTree       bool
 	common         *common.Common
@@ -66,9 +68,10 @@ type FileTree struct {
 
 var _ IFileTree = &FileTree{}
 
-func NewFileTree(getFiles func() []*models.File, common *common.Common, showTree bool) *FileTree {
+func NewFileTree(getFiles func() []*models.File, getChangelists func() *changelists.Set, common *common.Common, showTree bool) *FileTree {
 	return &FileTree{
 		getFiles:       getFiles,
+		getChangelists: getChangelists,
 		common:         common,
 		showTree:       showTree,
 		filter:         DisplayAll,
@@ -183,11 +186,26 @@ func (self *FileTree) SetTree() {
 	guiConfig := self.common.UserConfig().Gui
 	showRootItem := guiConfig.ShowRootItemInFileTree
 	cmp := NodeSortComparator[models.File](guiConfig.FileTreeSortOrder, guiConfig.FileTreeSortCaseSensitive)
-	if self.showTree {
+
+	// When named changelists exist we group files by changelist, showing a flat
+	// list within each group (a tree within a group isn't supported yet). This
+	// overrides the tree/flat toggle so the grouping is visible in either mode.
+	if set := self.Changelists(); set != nil && set.HasNamedChangelists() {
+		self.tree = BuildChangelistGroupedTree(filesForDisplay, showRootItem, cmp, set)
+	} else if self.showTree {
 		self.tree = BuildTreeFromFiles(filesForDisplay, showRootItem, cmp)
 	} else {
 		self.tree = BuildFlatTreeFromFiles(filesForDisplay, showRootItem, cmp)
 	}
+}
+
+// Changelists returns the current changelist set, or nil when changelists
+// aren't wired up (e.g. in unit tests that construct a bare tree).
+func (self *FileTree) Changelists() *changelists.Set {
+	if self.getChangelists == nil {
+		return nil
+	}
+	return self.getChangelists()
 }
 
 func (self *FileTree) IsCollapsed(path string) bool {

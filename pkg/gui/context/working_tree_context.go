@@ -2,6 +2,7 @@ package context
 
 import (
 	"github.com/jesseduffield/lazygit/pkg/commands/models"
+	"github.com/jesseduffield/lazygit/pkg/gui/changelists"
 	"github.com/jesseduffield/lazygit/pkg/gui/filetree"
 	"github.com/jesseduffield/lazygit/pkg/gui/presentation"
 	"github.com/jesseduffield/lazygit/pkg/gui/presentation/icons"
@@ -22,6 +23,7 @@ var (
 func NewWorkingTreeContext(c *ContextCommon) *WorkingTreeContext {
 	viewModel := filetree.NewFileTreeViewModel(
 		func() []*models.File { return c.Model().Files },
+		func() *changelists.Set { return c.Model().Changelists },
 		c.Common,
 		c.UserConfig().Gui.ShowFileTree,
 	)
@@ -33,6 +35,37 @@ func NewWorkingTreeContext(c *ContextCommon) *WorkingTreeContext {
 		return lo.Map(lines, func(line string, _ int) []string {
 			return []string{line}
 		})
+	}
+
+	// Insert a section header before the first file of each changelist group.
+	// The tree lays files out grouped by changelist (see BuildChangelistGroupedTree),
+	// so a group boundary is simply where the changelist of consecutive files
+	// changes.
+	getNonModelItems := func() []*NonModelItem {
+		set := c.Model().Changelists
+		if set == nil || !set.HasNamedChangelists() {
+			return nil
+		}
+
+		result := []*NonModelItem{}
+		prevName := ""
+		started := false
+		for i, node := range viewModel.GetAllItems() {
+			if node.File == nil {
+				continue
+			}
+			name := set.NameForPath(node.File.Path)
+			if started && name == prevName {
+				continue
+			}
+			result = append(result, &NonModelItem{
+				Index:   i,
+				Content: presentation.ChangelistHeaderLine(name, name == set.Active, c.Tr),
+			})
+			prevName = name
+			started = true
+		}
+		return result
 	}
 
 	ctx := &WorkingTreeContext{
@@ -48,6 +81,7 @@ func NewWorkingTreeContext(c *ContextCommon) *WorkingTreeContext {
 			ListRenderer: ListRenderer{
 				list:              viewModel,
 				getDisplayStrings: getDisplayStrings,
+				getNonModelItems:  getNonModelItems,
 			},
 			c: c,
 		},

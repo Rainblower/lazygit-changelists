@@ -118,7 +118,7 @@ M  file1
 		t.Run(s.name, func(t *testing.T) {
 			common := common.NewDummyCommon()
 			common.UserConfig().Gui.ShowRootItemInFileTree = s.showRootItem
-			viewModel := filetree.NewFileTree(func() []*models.File { return s.files }, common, true)
+			viewModel := filetree.NewFileTree(func() []*models.File { return s.files }, nil, common, true)
 			viewModel.SetTree()
 			for _, path := range s.collapsedPaths {
 				viewModel.ToggleCollapsed(path)

@@ -90,6 +90,7 @@ type TranslationSet struct {
 	FilterLabelTrackedFiles               string
 	FilterLabelUntrackedFiles             string
 	FilterLabelConflictingFiles           string
+	DefaultChangelistName                 string
 	MergeConflictsTitle                   string
 	MergeConflictDescription_DD           string
 	MergeConflictDescription_AU           string
@@ -1256,6 +1257,7 @@ func EnglishTranslationSet() *TranslationSet {
 		FilterLabelTrackedFiles:              "(only tracked)",
 		FilterLabelUntrackedFiles:            "(only untracked)",
 		FilterLabelConflictingFiles:          "(only conflicting)",
+		DefaultChangelistName:                "Default",
 		NoChangedFiles:                       "No changed files",
 		SoftReset:                            "Soft reset",
 		AlreadyCheckedOutBranch:              "You have already checked out this branch",

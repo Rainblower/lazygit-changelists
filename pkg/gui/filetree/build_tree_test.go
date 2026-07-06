@@ -4,6 +4,8 @@ import (
 	"testing"
 
 	"github.com/jesseduffield/lazygit/pkg/commands/models"
+	"github.com/jesseduffield/lazygit/pkg/gui/changelists"
+	"github.com/samber/lo"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -785,4 +787,26 @@ func TestBuildFlatTreeFromCommitFiles(t *testing.T) {
 			assert.EqualValues(t, s.expected, result)
 		})
 	}
+}
+
+func TestBuildChangelistGroupedTree(t *testing.T) {
+	files := []*models.File{
+		{Path: "a.go", Tracked: true},
+		{Path: "b.go", Tracked: true},
+		{Path: "c.go", Tracked: true},
+		{Path: "d.go", Tracked: true},
+	}
+	set := &changelists.Set{}
+	set.Assign("b.go", "Feature")
+	set.Assign("d.go", "Feature")
+
+	result := BuildChangelistGroupedTree(files, false, NodeSortComparator[models.File]("mixed", false), set)
+
+	paths := lo.Map(result.Children, func(node *Node[models.File], _ int) string {
+		return node.File.Path
+	})
+
+	// Default files (a.go, c.go) come first, then the Feature changelist's
+	// files (b.go, d.go); ordering within each group is preserved.
+	assert.Equal(t, []string{"a.go", "c.go", "b.go", "d.go"}, paths)
 }

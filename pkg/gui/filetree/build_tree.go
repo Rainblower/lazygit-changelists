@@ -5,6 +5,7 @@ import (
 	"strings"
 
 	"github.com/jesseduffield/lazygit/pkg/commands/models"
+	"github.com/jesseduffield/lazygit/pkg/gui/changelists"
 )
 
 func BuildTreeFromFiles(
@@ -167,6 +168,37 @@ func BuildFlatTreeFromFiles(
 	})
 
 	return &Node[models.File]{Children: sortedFiles}
+}
+
+// BuildChangelistGroupedTree lays the changed files out as a flat list ordered
+// by changelist: the Default group (files not assigned to any named changelist)
+// first, then each named changelist in the order they appear in the set. The
+// ordering within a group is preserved from the flat build, and section headers
+// for each group are added separately by the context's getNonModelItems.
+func BuildChangelistGroupedTree(
+	files []*models.File,
+	showRootItem bool,
+	cmp func(a, b *Node[models.File]) int,
+	set *changelists.Set,
+) *Node[models.File] {
+	root := BuildFlatTreeFromFiles(files, showRootItem, cmp)
+
+	groupOrder := map[string]int{}
+	for i, name := range set.Names() {
+		groupOrder[name] = i + 1
+	}
+	orderForNode := func(node *Node[models.File]) int {
+		if node.File == nil {
+			return 0
+		}
+		return groupOrder[set.NameForPath(node.File.Path)]
+	}
+
+	sort.SliceStable(root.Children, func(i, j int) bool {
+		return orderForNode(root.Children[i]) < orderForNode(root.Children[j])
+	})
+
+	return root
 }
 
 func split(str string) []string {

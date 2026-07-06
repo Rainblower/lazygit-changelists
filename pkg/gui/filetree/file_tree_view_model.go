@@ -6,6 +6,7 @@ import (
 
 	"github.com/jesseduffield/lazygit/pkg/commands/models"
 	"github.com/jesseduffield/lazygit/pkg/common"
+	"github.com/jesseduffield/lazygit/pkg/gui/changelists"
 	"github.com/jesseduffield/lazygit/pkg/gui/context/traits"
 	"github.com/jesseduffield/lazygit/pkg/gui/types"
 	"github.com/jesseduffield/lazygit/pkg/i18n"
@@ -30,8 +31,8 @@ type FileTreeViewModel struct {
 
 var _ IFileTreeViewModel = &FileTreeViewModel{}
 
-func NewFileTreeViewModel(getFiles func() []*models.File, common *common.Common, showTree bool) *FileTreeViewModel {
-	fileTree := NewFileTree(getFiles, common, showTree)
+func NewFileTreeViewModel(getFiles func() []*models.File, getChangelists func() *changelists.Set, common *common.Common, showTree bool) *FileTreeViewModel {
+	fileTree := NewFileTree(getFiles, getChangelists, common, showTree)
 	listCursor := traits.NewListCursor(fileTree.Len)
 	return &FileTreeViewModel{
 		IFileTree:     fileTree,
