@@ -1,3 +1,32 @@
+# lazygit — fork with changelists
+
+> **This is a personal fork of [jesseduffield/lazygit](https://github.com/jesseduffield/lazygit)** that adds JetBrains/Rider-style **changelists** to the Files panel. All credit for lazygit goes to Jesse Duffield and its contributors — the upstream README follows below.
+
+## Changelists
+
+Group your working-tree changes into named lists, independent of git's staging area (git has no native concept of a changelist, so this is a client-side overlay).
+
+- **`Ctrl+L`** in the Files panel opens the changelist menu: create a list, move the selected file(s) into one, choose the active list (where new work lands), and rename or delete a list.
+- Each changelist is a **collapsible tree node** — collapse/expand it with `Enter`, by clicking its arrow, or with collapse-all / expand-all. Directory structure and path compression work within each group.
+- Staging, unstaging, and discarding on a changelist header act on the whole group, like a directory.
+- Membership is stored per-worktree in `.git/lazygit/changelists.json`, so it never shows up as an untracked file and follows file renames.
+
+### Build & install
+
+```sh
+git clone git@github.com:Rainblower/lazygit-changelists.git
+cd lazygit-changelists
+go build -o lazygit .
+# put it ahead of the packaged lazygit (ensure ~/.local/bin precedes /usr/bin in PATH):
+cp lazygit ~/.local/bin/lazygit
+```
+
+Keeping up with upstream: `origin` points at jesseduffield/lazygit, so `git fetch origin && git rebase <new-tag> feature/changelists` rebases the feature onto a newer release.
+
+---
+
+<sub>Upstream README below.</sub>
+
 <div align="center">
 <sup>Special thanks to:</sup>
 <br>
