@@ -872,13 +872,25 @@ func (self *RefreshHelper) loadOrPruneChangelists(files []*models.File) {
 		self.c.Model().Changelists = set
 	}
 
+	set := self.c.Model().Changelists
+
+	// Follow renames so a file keeps its changelist across a rename, and note
+	// the live paths so Prune (below) can drop entries for files that are no
+	// longer changed. Renames must be applied before pruning, since the old
+	// path is already gone from the live set.
+	changed := false
 	livePaths := make(map[string]bool, len(files))
 	for _, file := range files {
+		if file.IsRename() {
+			changed = set.RenamePath(file.PreviousPath, file.Path) || changed
+		}
 		livePaths[file.Path] = true
 	}
 
-	if self.c.Model().Changelists.Prune(livePaths) {
-		if err := self.c.Model().Changelists.Save(gitDirPath); err != nil {
+	changed = set.Prune(livePaths) || changed
+
+	if changed {
+		if err := set.Save(gitDirPath); err != nil {
 			self.c.Log.Error(err)
 		}
 	}

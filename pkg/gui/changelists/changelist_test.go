@@ -60,9 +60,13 @@ func TestRemoveReturnsFilesToDefault(t *testing.T) {
 func TestRenamePathFollowsFileRename(t *testing.T) {
 	set := &Set{}
 	set.Assign("old.go", "Feature")
-	set.RenamePath("old.go", "new.go")
+
+	assert.True(t, set.RenamePath("old.go", "new.go"))
 	assert.Equal(t, "Feature", set.NameForPath("new.go"))
 	assert.Equal(t, DefaultName, set.NameForPath("old.go"))
+
+	// renaming an untracked path changes nothing
+	assert.False(t, set.RenamePath("absent.go", "other.go"))
 }
 
 func TestPruneDropsStalePaths(t *testing.T) {

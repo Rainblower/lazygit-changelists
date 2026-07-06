@@ -130,15 +130,16 @@ func (self *Set) Remove(name string) {
 }
 
 // RenamePath updates a path in place when a file is renamed, so its changelist
-// membership follows the rename. It's a no-op if the old path isn't tracked by
-// any changelist.
-func (self *Set) RenamePath(oldPath string, newPath string) {
+// membership follows the rename. It returns whether an entry was actually
+// updated (false if the old path isn't tracked by any changelist).
+func (self *Set) RenamePath(oldPath string, newPath string) bool {
 	for _, cl := range self.Changelists {
 		if idx := slices.Index(cl.Paths, oldPath); idx != -1 {
 			cl.Paths[idx] = newPath
-			return
+			return true
 		}
 	}
+	return false
 }
 
 // Prune drops any path not present in the given set of live paths, and returns
