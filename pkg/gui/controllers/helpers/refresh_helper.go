@@ -874,6 +874,17 @@ func (self *RefreshHelper) loadOrPruneChangelists(files []*models.File) {
 
 	set := self.c.Model().Changelists
 
+	// Remember which named changelists had files before pruning, so we can
+	// detect ones that just became empty (their files were committed or
+	// discarded — Prune only drops paths no longer in the working tree, so a
+	// mere move between changelists doesn't count).
+	nonEmptyBefore := map[string]bool{}
+	for _, cl := range set.Changelists {
+		if len(cl.Paths) > 0 {
+			nonEmptyBefore[cl.Name] = true
+		}
+	}
+
 	// Follow renames so a file keeps its changelist across a rename, and note
 	// the live paths so Prune (below) can drop entries for files that are no
 	// longer changed. Renames must be applied before pruning, since the old
@@ -894,6 +905,44 @@ func (self *RefreshHelper) loadOrPruneChangelists(files []*models.File) {
 			self.c.Log.Error(err)
 		}
 	}
+
+	emptied := []string{}
+	for _, cl := range set.Changelists {
+		if nonEmptyBefore[cl.Name] && len(cl.Paths) == 0 {
+			emptied = append(emptied, cl.Name)
+		}
+	}
+	if len(emptied) > 0 {
+		self.promptToDeleteEmptiedChangelists(emptied, gitDirPath)
+	}
+}
+
+// promptToDeleteEmptiedChangelists offers to delete named changelists that just
+// became empty (all their files were committed or discarded). Declining keeps
+// them around; since they're already empty, a later refresh won't ask again.
+func (self *RefreshHelper) promptToDeleteEmptiedChangelists(names []string, gitDirPath string) {
+	self.c.OnUIThread(func() error {
+		self.c.Confirm(types.ConfirmOpts{
+			Title: self.c.Tr.EmptyChangelistTitle,
+			Prompt: utils.ResolvePlaceholderString(
+				self.c.Tr.EmptyChangelistPrompt,
+				map[string]string{"names": strings.Join(names, "', '")},
+			),
+			HandleConfirm: func() error {
+				set := self.c.Model().Changelists
+				for _, name := range names {
+					set.Remove(name)
+				}
+				if err := set.Save(gitDirPath); err != nil {
+					self.c.Log.Error(err)
+				}
+				self.c.Contexts().Files.FileTreeViewModel.SetTree()
+				self.c.PostRefreshUpdate(self.c.Contexts().Files)
+				return nil
+			},
+		})
+		return nil
+	})
 }
 
 // the reflogs panel is the only panel where we cache data, in that we only

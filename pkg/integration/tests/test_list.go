@@ -227,6 +227,7 @@ var tests = []*components.IntegrationTest{
 	file.Changelists,
 	file.ChangelistsCollapse,
 	file.ChangelistsCommitWarning,
+	file.ChangelistsDeleteEmptied,
 	file.ChangelistsStageIsolation,
 	file.ChangelistsTreeView,
 	file.ClickArrowToCollapse,
