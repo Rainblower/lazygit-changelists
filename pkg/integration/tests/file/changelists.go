@@ -44,13 +44,14 @@ var Changelists = NewIntegrationTest(NewIntegrationTestArgs{
 					Type("Feature").
 					Confirm()
 			}).
-			// file1 now sits under the Feature group; the others stay in Default
+			// file1 now sits under the Feature group; the others stay in Default.
+			// Group headers are tree nodes now, and files are indented under them.
 			Lines(
-				Contains("Default"),
-				Equals("?? file2"),
-				Equals("?? file3"),
-				Contains("Feature"),
-				Equals("?? file1"),
+				Contains("▼ Default"),
+				Contains("file2"),
+				Contains("file3"),
+				Contains("▼ Feature"),
+				Contains("file1"),
 			)
 
 		// rename the changelist
@@ -74,11 +75,11 @@ var Changelists = NewIntegrationTest(NewIntegrationTestArgs{
 					Confirm()
 			}).
 			Lines(
-				Contains("Default"),
-				Equals("?? file2"),
-				Equals("?? file3"),
-				Contains("Renamed"),
-				Equals("?? file1"),
+				Contains("▼ Default"),
+				Contains("file2"),
+				Contains("file3"),
+				Contains("▼ Renamed"),
+				Contains("file1"),
 			)
 
 		// delete the changelist; its file returns to Default and grouping goes away

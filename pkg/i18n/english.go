@@ -106,6 +106,7 @@ type TranslationSet struct {
 	DeleteChangelistMenuItem              string
 	DeleteChangelistTitle                 string
 	InvalidChangelistName                 string
+	ChangelistHeaderNoFileAction          string
 	MergeConflictsTitle                   string
 	MergeConflictDescription_DD           string
 	MergeConflictDescription_AU           string
@@ -1288,6 +1289,7 @@ func EnglishTranslationSet() *TranslationSet {
 		DeleteChangelistMenuItem:             "Delete changelist",
 		DeleteChangelistTitle:                "Select changelist to delete",
 		InvalidChangelistName:                "Cannot use changelist name '{{.name}}': it's empty or already in use",
+		ChangelistHeaderNoFileAction:         "This action can't be run on a changelist header",
 		NoChangedFiles:                       "No changed files",
 		SoftReset:                            "Soft reset",
 		AlreadyCheckedOutBranch:              "You have already checked out this branch",

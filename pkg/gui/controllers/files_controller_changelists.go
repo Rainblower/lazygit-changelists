@@ -191,6 +191,17 @@ func (self *FilesController) saveAndRerenderChangelists() error {
 	return nil
 }
 
+// notOnChangelistHeader disables file-specific actions (open, diff, ignore,
+// enter, …) when the selection is a changelist header, which has no file of its
+// own.
+func (self *FilesController) notOnChangelistHeader() *types.DisabledReason {
+	node := self.getSelectedItem()
+	if node != nil && node.IsChangelistHeader() {
+		return &types.DisabledReason{Text: self.c.Tr.ChangelistHeaderNoFileAction}
+	}
+	return nil
+}
+
 func filePathsOfNodes(nodes []*filetree.FileNode) []string {
 	paths := []string{}
 	for _, node := range normalisedSelectedNodes(nodes) {

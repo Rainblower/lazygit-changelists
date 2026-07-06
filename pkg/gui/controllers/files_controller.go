@@ -91,7 +91,7 @@ func (self *FilesController) GetKeybindings(opts types.KeybindingsOpts) []*types
 		{
 			Keys:              opts.GetKeys(opts.Config.Universal.Edit),
 			Handler:           self.withItems(self.edit),
-			GetDisabledReason: self.require(self.withFileTreeViewModelMutex(self.itemsSelected(self.canEditFiles))),
+			GetDisabledReason: self.require(self.withFileTreeViewModelMutex(self.itemsSelected(self.canEditFiles)), self.notOnChangelistHeader),
 			Description:       self.c.Tr.Edit,
 			Tooltip:           self.c.Tr.EditFileTooltip,
 			DisplayOnScreen:   true,
@@ -99,14 +99,14 @@ func (self *FilesController) GetKeybindings(opts types.KeybindingsOpts) []*types
 		{
 			Keys:              opts.GetKeys(opts.Config.Universal.OpenFile),
 			Handler:           self.Open,
-			GetDisabledReason: self.require(self.singleItemSelected()),
+			GetDisabledReason: self.require(self.singleItemSelected(), self.notOnChangelistHeader),
 			Description:       self.c.Tr.OpenFile,
 			Tooltip:           self.c.Tr.OpenFileTooltip,
 		},
 		{
 			Keys:              opts.GetKeys(opts.Config.Files.IgnoreFile),
 			Handler:           self.withItem(self.ignoreOrExcludeMenu),
-			GetDisabledReason: self.require(self.singleItemSelected()),
+			GetDisabledReason: self.require(self.singleItemSelected(), self.notOnChangelistHeader),
 			Description:       self.c.Tr.Actions.IgnoreExcludeFile,
 			OpensMenu:         true,
 		},
@@ -138,7 +138,7 @@ func (self *FilesController) GetKeybindings(opts types.KeybindingsOpts) []*types
 		{
 			Keys:              opts.GetKeys(opts.Config.Universal.GoInto),
 			Handler:           self.enter,
-			GetDisabledReason: self.require(self.singleItemSelected()),
+			GetDisabledReason: self.require(self.singleItemSelected(), self.notOnChangelistHeader),
 			Description:       self.c.Tr.FileEnter,
 			Tooltip:           self.c.Tr.FileEnterTooltip,
 		},
@@ -174,7 +174,7 @@ func (self *FilesController) GetKeybindings(opts types.KeybindingsOpts) []*types
 		{
 			Keys:              opts.GetKeys(opts.Config.Universal.OpenDiffTool),
 			Handler:           self.withItem(self.openDiffTool),
-			GetDisabledReason: self.require(self.singleItemSelected()),
+			GetDisabledReason: self.require(self.singleItemSelected(), self.notOnChangelistHeader),
 			Description:       self.c.Tr.OpenDiffTool,
 		},
 		{
@@ -267,6 +267,11 @@ func (self *FilesController) GetOnRenderToMain() func() {
 
 			if node == nil {
 				self.renderToMainWithTask(types.NewRenderStringTask(self.c.Tr.NoChangedFiles))
+				return
+			}
+
+			if node.IsChangelistHeader() {
+				self.renderToMainWithTask(types.NewRenderStringTask(""))
 				return
 			}
 
@@ -528,6 +533,8 @@ func (self *FilesController) toggleStaged(
 	stage func(unstagedNodes []*filetree.FileNode) error,
 	unstage func(nodes []*filetree.FileNode) error,
 ) error {
+	nodes = expandChangelistHeaders(nodes)
+
 	for _, node := range nodes {
 		// if any files within have inline merge conflicts we can't stage or unstage,
 		// or it'll end up with those >>>>>> lines actually staged
@@ -1392,7 +1399,7 @@ func (self *FilesController) openCopyMenu() error {
 			self.c.Toast(self.c.Tr.FileNameCopiedToast)
 			return nil
 		},
-		DisabledReason: self.require(self.singleItemSelected())(),
+		DisabledReason: self.require(self.singleItemSelected(), self.notOnChangelistHeader)(),
 		Keys:           menuKey('n'),
 	}
 	copyRelativePathItem := &types.MenuItem{
@@ -1404,7 +1411,7 @@ func (self *FilesController) openCopyMenu() error {
 			self.c.Toast(self.c.Tr.FilePathCopiedToast)
 			return nil
 		},
-		DisabledReason: self.require(self.singleItemSelected())(),
+		DisabledReason: self.require(self.singleItemSelected(), self.notOnChangelistHeader)(),
 		Keys:           menuKey('p'),
 	}
 	copyAbsolutePathItem := &types.MenuItem{
@@ -1420,7 +1427,7 @@ func (self *FilesController) openCopyMenu() error {
 			self.c.Toast(self.c.Tr.FilePathCopiedToast)
 			return nil
 		},
-		DisabledReason: self.require(self.singleItemSelected())(),
+		DisabledReason: self.require(self.singleItemSelected(), self.notOnChangelistHeader)(),
 		Keys:           menuKey('P'),
 	}
 	copyFileDiffItem := &types.MenuItem{
@@ -1573,6 +1580,24 @@ func normalisedSelectedNodes(selectedNodes []*filetree.FileNode) []*filetree.Fil
 	return lo.Filter(selectedNodes, func(node *filetree.FileNode, _ int) bool {
 		return !isDescendentOfSelectedNodes(node, selectedNodes)
 	})
+}
+
+// expandChangelistHeaders replaces any changelist header node in the selection
+// with that changelist's top-level children (real files/directories). A header
+// has only a synthetic path, so file-path-based git operations must act on its
+// group's contents instead — which also makes a header behave like a directory.
+func expandChangelistHeaders(nodes []*filetree.FileNode) []*filetree.FileNode {
+	result := make([]*filetree.FileNode, 0, len(nodes))
+	for _, node := range nodes {
+		if node.IsChangelistHeader() {
+			for _, child := range node.Children {
+				result = append(result, filetree.NewFileNode(child))
+			}
+			continue
+		}
+		result = append(result, node)
+	}
+	return result
 }
 
 func isDescendentOfSelectedNodes(node *filetree.FileNode, selectedNodes []*filetree.FileNode) bool {
@@ -1730,7 +1755,7 @@ func (self *FilesController) canRemove(selectedNodes []*filetree.FileNode) *type
 func (self *FilesController) remove(selectedNodes []*filetree.FileNode) error {
 	submodules := self.c.Model().Submodules
 
-	selectedNodes = normalisedSelectedNodes(selectedNodes)
+	selectedNodes = normalisedSelectedNodes(expandChangelistHeaders(selectedNodes))
 
 	// If we have one submodule then we must only have one submodule or `canRemove` would have
 	// returned an error

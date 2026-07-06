@@ -1,7 +1,6 @@
 package presentation
 
 import (
-	"fmt"
 	"strings"
 
 	"github.com/gookit/color"
@@ -22,20 +21,30 @@ const (
 	COLLAPSED_ARROW = "▶"
 )
 
-// ChangelistHeaderLine renders the section header shown above the files of a
-// changelist group. The active changelist (the one new files are assigned to)
-// is highlighted so it's easy to see where staging new work will land.
-func ChangelistHeaderLine(name string, active bool, tr *i18n.TranslationSet) string {
-	displayName := name
-	if name == changelists.DefaultName {
+// changelistHeaderLine renders a changelist group's header node: a collapse
+// arrow (only when the group has files to hide), the changelist name, and
+// highlighting for the active changelist (the one new files are assigned to) so
+// it's easy to see where staging new work will land.
+func changelistHeaderLine(node *filetree.FileNode, active bool, isCollapsed bool, visualDepth int, tr *i18n.TranslationSet) string {
+	displayName := node.ChangelistName()
+	if displayName == changelists.DefaultName {
 		displayName = tr.DefaultChangelistName
 	}
 
-	label := fmt.Sprintf("--- %s ---", displayName)
-	if active {
-		return style.FgYellow.SetBold().Sprint(label)
+	indent := strings.Repeat("  ", visualDepth)
+	arrow := ""
+	if len(node.Children) > 0 {
+		arrow = EXPANDED_ARROW + " "
+		if isCollapsed {
+			arrow = COLLAPSED_ARROW + " "
+		}
 	}
-	return style.FgCyan.Sprint(label)
+
+	line := indent + arrow + displayName
+	if active {
+		return style.FgYellow.SetBold().Sprint(line)
+	}
+	return style.FgCyan.Sprint(line)
 }
 
 func RenderFileTree(
@@ -45,10 +54,16 @@ func RenderFileTree(
 	showNumstat bool,
 	customIconsConfig *config.CustomIconsConfig,
 	showRootItem bool,
+	activeChangelist string,
+	tr *i18n.TranslationSet,
 ) []string {
 	collapsedPaths := tree.CollapsedPaths()
 	return renderAux(tree.GetRoot().Raw(), collapsedPaths, -1, -1, func(node *filetree.Node[models.File], treeDepth int, visualDepth int, isCollapsed bool) string {
 		fileNode := filetree.NewFileNode(node)
+
+		if fileNode.IsChangelistHeader() {
+			return changelistHeaderLine(fileNode, fileNode.ChangelistName() == activeChangelist, isCollapsed, visualDepth, tr)
+		}
 
 		return getFileLine(isCollapsed, fileNode.GetHasUnstagedChanges(), fileNode.GetHasStagedChanges(), treeDepth, visualDepth, showNumstat, showFileIcons, submoduleConfigs, node, customIconsConfig, showRootItem)
 	})

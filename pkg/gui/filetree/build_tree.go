@@ -171,16 +171,22 @@ func BuildFlatTreeFromFiles(
 	return &Node[models.File]{Children: sortedFiles}
 }
 
-// BuildChangelistGroupedTree lays the changed files out grouped by changelist:
-// the Default group (files not assigned to any named changelist) first, then
-// each named changelist in the order they appear in the set. Each group gets
-// its own independently-built subtree, so directory structure and path
-// compression work within a group exactly as they do without changelists; when
-// showTree is false each group is a flat list instead. Section headers for each
-// group are added separately by the context's getNonModelItems.
+// BuildChangelistGroupedTree groups the changed files by changelist, one header
+// node per group: the Default group (files not assigned to any named
+// changelist) first, then each named changelist in the order they appear in the
+// set. Each header node's children are that group's files, built as their own
+// independent subtree so directory structure and path compression work within a
+// group exactly as they do without changelists (or as a flat list when showTree
+// is false).
 //
-// The root item ("./") is never shown here: the changelist headers already
-// provide the top-level grouping, so a per-group root item would just be noise.
+// The Default group is only shown when it has files, but named changelists are
+// always shown even when empty, so a freshly created changelist is visible (and
+// collapsible) before anything is moved into it.
+//
+// The header node carries a synthetic path (see ChangelistNodePath) so it never
+// collides with a real file/directory path. We deliberately don't compress the
+// outer tree: compression would fold a header with a single child directory
+// into that directory, erasing the header.
 func BuildChangelistGroupedTree(
 	files []*models.File,
 	cmp func(a, b *Node[models.File]) int,
@@ -194,17 +200,31 @@ func BuildChangelistGroupedTree(
 		groupFiles := lo.Filter(files, func(file *models.File, _ int) bool {
 			return set.NameForPath(file.Path) == name
 		})
-		if len(groupFiles) == 0 {
+		if name == changelists.DefaultName && len(groupFiles) == 0 {
 			continue
 		}
 
-		var groupRoot *Node[models.File]
-		if showTree {
-			groupRoot = BuildTreeFromFiles(groupFiles, false, cmp)
-		} else {
-			groupRoot = BuildFlatTreeFromFiles(groupFiles, false, cmp)
+		var groupChildren []*Node[models.File]
+		if len(groupFiles) > 0 {
+			var groupRoot *Node[models.File]
+			if showTree {
+				groupRoot = BuildTreeFromFiles(groupFiles, false, cmp)
+			} else {
+				groupRoot = BuildFlatTreeFromFiles(groupFiles, false, cmp)
+			}
+			groupChildren = groupRoot.Children
 		}
-		children = append(children, groupRoot.Children...)
+
+		children = append(children, &Node[models.File]{
+			path:     ChangelistNodePath(name),
+			Children: groupChildren,
+			// A header adds a visual level (its children are indented under it)
+			// but not a logical path level: a child file's name is still derived
+			// from the full path, as if the group were the root. CompressionLevel
+			// -1 cancels the tree-depth increment renderAux applies on descent,
+			// while leaving the visual indentation intact.
+			CompressionLevel: -1,
+		})
 	}
 
 	return &Node[models.File]{Children: children}

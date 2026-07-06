@@ -802,13 +802,35 @@ func TestBuildChangelistGroupedTreeFlat(t *testing.T) {
 
 	result := BuildChangelistGroupedTree(files, NodeSortComparator[models.File]("mixed", false), set, false)
 
-	paths := lo.Map(result.Children, func(node *Node[models.File], _ int) string {
-		return node.File.Path
-	})
+	// two header nodes: Default first, then Feature
+	assert.Len(t, result.Children, 2)
+	assert.Equal(t, ChangelistNodePath(changelists.DefaultName), result.Children[0].GetInternalPath())
+	assert.Equal(t, ChangelistNodePath("Feature"), result.Children[1].GetInternalPath())
 
-	// Default files (a.go, c.go) come first, then the Feature changelist's
-	// files (b.go, d.go); within a group it's a flat list.
-	assert.Equal(t, []string{"a.go", "c.go", "b.go", "d.go"}, paths)
+	groupPaths := func(header *Node[models.File]) []string {
+		return lo.Map(header.Children, func(node *Node[models.File], _ int) string {
+			return node.File.Path
+		})
+	}
+
+	// each group is a flat list of its own files
+	assert.Equal(t, []string{"a.go", "c.go"}, groupPaths(result.Children[0]))
+	assert.Equal(t, []string{"b.go", "d.go"}, groupPaths(result.Children[1]))
+}
+
+func TestBuildChangelistGroupedTreeShowsEmptyNamedChangelist(t *testing.T) {
+	files := []*models.File{{Path: "a.go", Tracked: true}}
+	set := &changelists.Set{}
+	set.Create("Empty")
+
+	result := BuildChangelistGroupedTree(files, NodeSortComparator[models.File]("mixed", false), set, false)
+
+	// Default (with a.go) plus the empty named changelist, which is shown even
+	// though it has no files so it can be seen and collapsed
+	assert.Len(t, result.Children, 2)
+	assert.Equal(t, ChangelistNodePath(changelists.DefaultName), result.Children[0].GetInternalPath())
+	assert.Equal(t, ChangelistNodePath("Empty"), result.Children[1].GetInternalPath())
+	assert.Empty(t, result.Children[1].Children)
 }
 
 func TestBuildChangelistGroupedTreeWithTree(t *testing.T) {
@@ -822,17 +844,24 @@ func TestBuildChangelistGroupedTreeWithTree(t *testing.T) {
 
 	result := BuildChangelistGroupedTree(files, NodeSortComparator[models.File]("mixed", false), set, true)
 
-	// Each group keeps its own directory structure. The Default group has the
-	// "dir" and "other" directories (a real tree, not a flat list); the Feature
-	// group has its own "dir" holding just b.go. So "dir" appears in both groups
-	// independently.
-	topLevelPaths := lo.Map(result.Children, func(node *Node[models.File], _ int) string {
+	// two header nodes, each holding its own directory tree
+	assert.Len(t, result.Children, 2)
+	defaultHeader := result.Children[0]
+	featureHeader := result.Children[1]
+	assert.Equal(t, ChangelistNodePath(changelists.DefaultName), defaultHeader.GetInternalPath())
+	assert.Equal(t, ChangelistNodePath("Feature"), featureHeader.GetInternalPath())
+
+	// Default group keeps the "dir" and "other" directories (a real tree);
+	// Feature has its own "dir" holding just b.go, so "dir" appears in both
+	// groups independently.
+	defaultTop := lo.Map(defaultHeader.Children, func(node *Node[models.File], _ int) string {
 		return node.GetPath()
 	})
-	assert.Equal(t, []string{"dir", "other", "dir/b.go"}, topLevelPaths)
+	assert.Equal(t, []string{"dir", "other"}, defaultTop)
 
 	// the Default group's "dir" directory contains a.go
-	defaultDir := result.Children[0]
-	assert.Nil(t, defaultDir.File)
-	assert.Equal(t, "dir/a.go", defaultDir.Children[0].GetPath())
+	assert.Nil(t, defaultHeader.Children[0].File)
+	assert.Equal(t, "dir/a.go", defaultHeader.Children[0].Children[0].GetPath())
+
+	assert.Equal(t, "dir/b.go", featureHeader.Children[0].GetPath())
 }
