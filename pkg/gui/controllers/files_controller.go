@@ -1583,15 +1583,19 @@ func normalisedSelectedNodes(selectedNodes []*filetree.FileNode) []*filetree.Fil
 }
 
 // expandChangelistHeaders replaces any changelist header node in the selection
-// with that changelist's top-level children (real files/directories). A header
-// has only a synthetic path, so file-path-based git operations must act on its
-// group's contents instead — which also makes a header behave like a directory.
+// with that changelist's individual leaf files. A header has only a synthetic
+// path, so file-path-based git operations must act on its group's contents
+// instead. We expand to leaves (not the header's directory children) on
+// purpose: staging a directory node would run `git add <dir>`, which stages
+// every changed file in that directory — including files that belong to a
+// different changelist but happen to live in the same directory. Acting on the
+// exact file paths keeps a changelist's staging isolated to its own files.
 func expandChangelistHeaders(nodes []*filetree.FileNode) []*filetree.FileNode {
 	result := make([]*filetree.FileNode, 0, len(nodes))
 	for _, node := range nodes {
 		if node.IsChangelistHeader() {
-			for _, child := range node.Children {
-				result = append(result, filetree.NewFileNode(child))
+			for _, leaf := range node.GetLeaves() {
+				result = append(result, filetree.NewFileNode(leaf))
 			}
 			continue
 		}
