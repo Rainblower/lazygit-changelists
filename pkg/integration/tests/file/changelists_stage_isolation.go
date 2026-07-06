@@ -75,6 +75,29 @@ var ChangelistsStageIsolation = NewIntegrationTest(NewIntegrationTestArgs{
 				Contains("src"),
 				Contains("A  a.go"),
 				Contains("A  c.go"),
+			).
+			// unstage everything again by pressing space on the header
+			NavigateToLine(Contains("▼ A")).
+			Press(keys.Universal.Select).
+			Lines(
+				Contains("▼ Default"),
+				Contains("?? src/b.go"),
+				Contains("▼ A"),
+				Contains("src"),
+				Contains("?? a.go"),
+				Contains("?? c.go"),
+			).
+			// staging the "src" directory node *inside* A must also stay isolated:
+			// only A's src files get staged, not Default's b.go in the same dir
+			NavigateToLine(Contains("▼ src")).
+			Press(keys.Universal.Select).
+			Lines(
+				Contains("▼ Default"),
+				Contains("?? src/b.go"),
+				Contains("▼ A"),
+				Contains("src"),
+				Contains("A  a.go"),
+				Contains("A  c.go"),
 			)
 	},
 })

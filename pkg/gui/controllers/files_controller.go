@@ -533,7 +533,7 @@ func (self *FilesController) toggleStaged(
 	stage func(unstagedNodes []*filetree.FileNode) error,
 	unstage func(nodes []*filetree.FileNode) error,
 ) error {
-	nodes = expandChangelistHeaders(nodes)
+	nodes = self.expandNodesForChangelists(nodes)
 
 	for _, node := range nodes {
 		// if any files within have inline merge conflicts we can't stage or unstage,
@@ -1582,24 +1582,27 @@ func normalisedSelectedNodes(selectedNodes []*filetree.FileNode) []*filetree.Fil
 	})
 }
 
-// expandChangelistHeaders replaces any changelist header node in the selection
-// with that changelist's individual leaf files. A header has only a synthetic
-// path, so file-path-based git operations must act on its group's contents
-// instead. We expand to leaves (not the header's directory children) on
-// purpose: staging a directory node would run `git add <dir>`, which stages
-// every changed file in that directory — including files that belong to a
-// different changelist but happen to live in the same directory. Acting on the
-// exact file paths keeps a changelist's staging isolated to its own files.
-func expandChangelistHeaders(nodes []*filetree.FileNode) []*filetree.FileNode {
+// expandNodesForChangelists expands the selection to individual leaf files when
+// changelists are active. With changelists, a node's on-disk path doesn't map
+// cleanly onto what the tree shows: a header has only a synthetic path, and a
+// directory node represents just its group's files even though the directory on
+// disk holds files of other changelists too. Running a path-based git operation
+// (`git add <dir>`, discard, …) on such a path would leak across changelists —
+// staging one changelist's "src" would stage another changelist's files in the
+// same "src". Acting on the exact leaf-file paths keeps each changelist's
+// operations isolated to its own files. When changelists aren't in use we leave
+// the selection untouched, preserving the normal directory-level behavior.
+func (self *FilesController) expandNodesForChangelists(nodes []*filetree.FileNode) []*filetree.FileNode {
+	set := self.c.Model().Changelists
+	if set == nil || !set.HasNamedChangelists() {
+		return nodes
+	}
+
 	result := make([]*filetree.FileNode, 0, len(nodes))
 	for _, node := range nodes {
-		if node.IsChangelistHeader() {
-			for _, leaf := range node.GetLeaves() {
-				result = append(result, filetree.NewFileNode(leaf))
-			}
-			continue
+		for _, leaf := range node.GetLeaves() {
+			result = append(result, filetree.NewFileNode(leaf))
 		}
-		result = append(result, node)
 	}
 	return result
 }
@@ -1759,7 +1762,7 @@ func (self *FilesController) canRemove(selectedNodes []*filetree.FileNode) *type
 func (self *FilesController) remove(selectedNodes []*filetree.FileNode) error {
 	submodules := self.c.Model().Submodules
 
-	selectedNodes = normalisedSelectedNodes(expandChangelistHeaders(selectedNodes))
+	selectedNodes = normalisedSelectedNodes(self.expandNodesForChangelists(selectedNodes))
 
 	// If we have one submodule then we must only have one submodule or `canRemove` would have
 	// returned an error
