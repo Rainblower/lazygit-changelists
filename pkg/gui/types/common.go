@@ -8,6 +8,7 @@ import (
 	"github.com/jesseduffield/lazygit/pkg/common"
 	"github.com/jesseduffield/lazygit/pkg/config"
 	"github.com/jesseduffield/lazygit/pkg/gocui"
+	"github.com/jesseduffield/lazygit/pkg/gui/changelists"
 	"github.com/jesseduffield/lazygit/pkg/tasks"
 	"github.com/jesseduffield/lazygit/pkg/utils"
 	"github.com/sasha-s/go-deadlock"
@@ -335,6 +336,11 @@ type Model struct {
 	Authors map[string]*models.Author
 
 	HashPool *utils.StringPool
+
+	// Changelists groups the working tree's changed files into named groups,
+	// JetBrains-style. Loaded lazily from the worktree's git dir on the first
+	// files refresh; nil until then.
+	Changelists *changelists.Set
 }
 
 type Mutexes struct {

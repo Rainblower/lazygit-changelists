@@ -11,6 +11,7 @@ import (
 	"github.com/jesseduffield/lazygit/pkg/commands/models"
 	"github.com/jesseduffield/lazygit/pkg/config"
 	"github.com/jesseduffield/lazygit/pkg/gocui"
+	"github.com/jesseduffield/lazygit/pkg/gui/changelists"
 	"github.com/jesseduffield/lazygit/pkg/gui/context"
 	"github.com/jesseduffield/lazygit/pkg/gui/context/traits"
 	"github.com/jesseduffield/lazygit/pkg/gui/filetree"
@@ -846,11 +847,41 @@ func (self *RefreshHelper) refreshStateFiles(background bool) error {
 		self.c.Contexts().Files.GetView().Subtitle = ""
 	}
 
+	self.loadOrPruneChangelists(files)
+
 	self.c.Model().Files = files
 	fileTreeViewModel.SetTree()
 	fileTreeViewModel.RWMutex.Unlock()
 
 	return nil
+}
+
+// loadOrPruneChangelists lazily loads the changelists from the worktree's git
+// dir on first refresh, then drops any entries for files that are no longer
+// changed (e.g. committed or discarded outside lazygit) so the store doesn't
+// accumulate stale paths.
+func (self *RefreshHelper) loadOrPruneChangelists(files []*models.File) {
+	gitDirPath := self.c.Git().RepoPaths.WorktreeGitDirPath()
+
+	if self.c.Model().Changelists == nil {
+		set, err := changelists.Load(gitDirPath)
+		if err != nil {
+			self.c.Log.Error(err)
+			set = &changelists.Set{}
+		}
+		self.c.Model().Changelists = set
+	}
+
+	livePaths := make(map[string]bool, len(files))
+	for _, file := range files {
+		livePaths[file.Path] = true
+	}
+
+	if self.c.Model().Changelists.Prune(livePaths) {
+		if err := self.c.Model().Changelists.Save(gitDirPath); err != nil {
+			self.c.Log.Error(err)
+		}
+	}
 }
 
 // the reflogs panel is the only panel where we cache data, in that we only
