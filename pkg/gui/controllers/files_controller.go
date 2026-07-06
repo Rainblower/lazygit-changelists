@@ -138,7 +138,7 @@ func (self *FilesController) GetKeybindings(opts types.KeybindingsOpts) []*types
 		{
 			Keys:              opts.GetKeys(opts.Config.Universal.GoInto),
 			Handler:           self.enter,
-			GetDisabledReason: self.require(self.singleItemSelected(), self.notOnChangelistHeader),
+			GetDisabledReason: self.require(self.singleItemSelected()),
 			Description:       self.c.Tr.FileEnter,
 			Tooltip:           self.c.Tr.FileEnterTooltip,
 		},

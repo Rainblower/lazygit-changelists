@@ -57,6 +57,21 @@ var ChangelistsCollapse = NewIntegrationTest(NewIntegrationTestArgs{
 				Contains("file2"),
 				Contains("▼ Feature"),
 				Contains("file1"),
+			).
+			// pressing enter on a single header toggles just that group
+			NavigateToLine(Contains("▼ Default")).
+			Press(keys.Universal.GoInto).
+			Lines(
+				Contains("▶ Default"),
+				Contains("▼ Feature"),
+				Contains("file1"),
+			).
+			Press(keys.Universal.GoInto).
+			Lines(
+				Contains("▼ Default"),
+				Contains("file2"),
+				Contains("▼ Feature"),
+				Contains("file1"),
 			)
 	},
 })
