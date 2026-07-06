@@ -37,24 +37,36 @@ func NewWorkingTreeContext(c *ContextCommon) *WorkingTreeContext {
 		})
 	}
 
-	// Insert a section header before the first file of each changelist group.
-	// The tree lays files out grouped by changelist (see BuildChangelistGroupedTree),
-	// so a group boundary is simply where the changelist of consecutive files
-	// changes.
+	// Insert a section header before the first item of each changelist group.
+	// The tree lays each group out as its own contiguous subtree (see
+	// BuildChangelistGroupedTree), so a group boundary is simply where the
+	// changelist changes between consecutive top-level items. For a directory
+	// node we look at its first leaf, since a group's subtree only ever contains
+	// that group's files.
 	getNonModelItems := func() []*NonModelItem {
 		set := c.Model().Changelists
 		if set == nil || !set.HasNamedChangelists() {
 			return nil
 		}
 
+		groupOfNode := func(node *filetree.FileNode) string {
+			file := node.File
+			if file == nil {
+				if leaves := node.GetLeaves(); len(leaves) > 0 {
+					file = leaves[0].File
+				}
+			}
+			if file == nil {
+				return changelists.DefaultName
+			}
+			return set.NameForPath(file.Path)
+		}
+
 		result := []*NonModelItem{}
 		prevName := ""
 		started := false
 		for i, node := range viewModel.GetAllItems() {
-			if node.File == nil {
-				continue
-			}
-			name := set.NameForPath(node.File.Path)
+			name := groupOfNode(node)
 			if started && name == prevName {
 				continue
 			}

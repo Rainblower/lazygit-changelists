@@ -6,6 +6,7 @@ import (
 
 	"github.com/jesseduffield/lazygit/pkg/commands/models"
 	"github.com/jesseduffield/lazygit/pkg/gui/changelists"
+	"github.com/samber/lo"
 )
 
 func BuildTreeFromFiles(
@@ -170,35 +171,43 @@ func BuildFlatTreeFromFiles(
 	return &Node[models.File]{Children: sortedFiles}
 }
 
-// BuildChangelistGroupedTree lays the changed files out as a flat list ordered
-// by changelist: the Default group (files not assigned to any named changelist)
-// first, then each named changelist in the order they appear in the set. The
-// ordering within a group is preserved from the flat build, and section headers
-// for each group are added separately by the context's getNonModelItems.
+// BuildChangelistGroupedTree lays the changed files out grouped by changelist:
+// the Default group (files not assigned to any named changelist) first, then
+// each named changelist in the order they appear in the set. Each group gets
+// its own independently-built subtree, so directory structure and path
+// compression work within a group exactly as they do without changelists; when
+// showTree is false each group is a flat list instead. Section headers for each
+// group are added separately by the context's getNonModelItems.
+//
+// The root item ("./") is never shown here: the changelist headers already
+// provide the top-level grouping, so a per-group root item would just be noise.
 func BuildChangelistGroupedTree(
 	files []*models.File,
-	showRootItem bool,
 	cmp func(a, b *Node[models.File]) int,
 	set *changelists.Set,
+	showTree bool,
 ) *Node[models.File] {
-	root := BuildFlatTreeFromFiles(files, showRootItem, cmp)
+	groupNames := append([]string{changelists.DefaultName}, set.Names()...)
 
-	groupOrder := map[string]int{}
-	for i, name := range set.Names() {
-		groupOrder[name] = i + 1
-	}
-	orderForNode := func(node *Node[models.File]) int {
-		if node.File == nil {
-			return 0
+	children := []*Node[models.File]{}
+	for _, name := range groupNames {
+		groupFiles := lo.Filter(files, func(file *models.File, _ int) bool {
+			return set.NameForPath(file.Path) == name
+		})
+		if len(groupFiles) == 0 {
+			continue
 		}
-		return groupOrder[set.NameForPath(node.File.Path)]
+
+		var groupRoot *Node[models.File]
+		if showTree {
+			groupRoot = BuildTreeFromFiles(groupFiles, false, cmp)
+		} else {
+			groupRoot = BuildFlatTreeFromFiles(groupFiles, false, cmp)
+		}
+		children = append(children, groupRoot.Children...)
 	}
 
-	sort.SliceStable(root.Children, func(i, j int) bool {
-		return orderForNode(root.Children[i]) < orderForNode(root.Children[j])
-	})
-
-	return root
+	return &Node[models.File]{Children: children}
 }
 
 func split(str string) []string {

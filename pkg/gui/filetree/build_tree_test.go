@@ -789,7 +789,7 @@ func TestBuildFlatTreeFromCommitFiles(t *testing.T) {
 	}
 }
 
-func TestBuildChangelistGroupedTree(t *testing.T) {
+func TestBuildChangelistGroupedTreeFlat(t *testing.T) {
 	files := []*models.File{
 		{Path: "a.go", Tracked: true},
 		{Path: "b.go", Tracked: true},
@@ -800,13 +800,39 @@ func TestBuildChangelistGroupedTree(t *testing.T) {
 	set.Assign("b.go", "Feature")
 	set.Assign("d.go", "Feature")
 
-	result := BuildChangelistGroupedTree(files, false, NodeSortComparator[models.File]("mixed", false), set)
+	result := BuildChangelistGroupedTree(files, NodeSortComparator[models.File]("mixed", false), set, false)
 
 	paths := lo.Map(result.Children, func(node *Node[models.File], _ int) string {
 		return node.File.Path
 	})
 
 	// Default files (a.go, c.go) come first, then the Feature changelist's
-	// files (b.go, d.go); ordering within each group is preserved.
+	// files (b.go, d.go); within a group it's a flat list.
 	assert.Equal(t, []string{"a.go", "c.go", "b.go", "d.go"}, paths)
+}
+
+func TestBuildChangelistGroupedTreeWithTree(t *testing.T) {
+	files := []*models.File{
+		{Path: "dir/a.go", Tracked: true},
+		{Path: "dir/b.go", Tracked: true},
+		{Path: "other/c.go", Tracked: true},
+	}
+	set := &changelists.Set{}
+	set.Assign("dir/b.go", "Feature")
+
+	result := BuildChangelistGroupedTree(files, NodeSortComparator[models.File]("mixed", false), set, true)
+
+	// Each group keeps its own directory structure. The Default group has the
+	// "dir" and "other" directories (a real tree, not a flat list); the Feature
+	// group has its own "dir" holding just b.go. So "dir" appears in both groups
+	// independently.
+	topLevelPaths := lo.Map(result.Children, func(node *Node[models.File], _ int) string {
+		return node.GetPath()
+	})
+	assert.Equal(t, []string{"dir", "other", "dir/b.go"}, topLevelPaths)
+
+	// the Default group's "dir" directory contains a.go
+	defaultDir := result.Children[0]
+	assert.Nil(t, defaultDir.File)
+	assert.Equal(t, "dir/a.go", defaultDir.Children[0].GetPath())
 }

@@ -187,11 +187,11 @@ func (self *FileTree) SetTree() {
 	showRootItem := guiConfig.ShowRootItemInFileTree
 	cmp := NodeSortComparator[models.File](guiConfig.FileTreeSortOrder, guiConfig.FileTreeSortCaseSensitive)
 
-	// When named changelists exist we group files by changelist, showing a flat
-	// list within each group (a tree within a group isn't supported yet). This
-	// overrides the tree/flat toggle so the grouping is visible in either mode.
+	// When named changelists exist we group files by changelist, building each
+	// group's subtree independently so directory structure works within a group.
+	// The tree/flat toggle still applies within each group.
 	if set := self.Changelists(); set != nil && set.HasNamedChangelists() {
-		self.tree = BuildChangelistGroupedTree(filesForDisplay, showRootItem, cmp, set)
+		self.tree = BuildChangelistGroupedTree(filesForDisplay, cmp, set, self.showTree)
 	} else if self.showTree {
 		self.tree = BuildTreeFromFiles(filesForDisplay, showRootItem, cmp)
 	} else {

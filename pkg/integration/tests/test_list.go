@@ -225,6 +225,7 @@ var tests = []*components.IntegrationTest{
 	diff.IgnoreWhitespace,
 	diff.RenameSimilarityThresholdChange,
 	file.Changelists,
+	file.ChangelistsTreeView,
 	file.ClickArrowToCollapse,
 	file.CollapseExpand,
 	file.CopyMenu,
