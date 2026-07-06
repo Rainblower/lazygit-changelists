@@ -241,6 +241,7 @@ _This file is auto-generated. To update, make the changes in the pkg/i18n direct
 | `` f `` | フェッチ | リモートから変更をフェッチします。 |
 | `` - `` | すべてのファイルを折りたたむ | ファイルツリー内のすべてのディレクトリを折りたたみます |
 | `` = `` | すべてのファイルを展開 | ファイルツリー内のすべてのディレクトリを展開します |
+| `` <ctrl+l> `` | Changelist options | View and manage changelists: named groups that partition your changed files, like in JetBrains IDEs. |
 | `` 0 `` | メインビューにフォーカス |  |
 | `` / `` | 現在のビューをテキストでフィルタリング |  |
 

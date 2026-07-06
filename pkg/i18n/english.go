@@ -91,6 +91,21 @@ type TranslationSet struct {
 	FilterLabelUntrackedFiles             string
 	FilterLabelConflictingFiles           string
 	DefaultChangelistName                 string
+	ChangelistOptions                     string
+	ChangelistOptionsTooltip              string
+	NewChangelistMenuItem                 string
+	NewChangelistPrompt                   string
+	MoveToChangelistMenuItem              string
+	MoveToChangelistTitle                 string
+	MoveToDefaultMenuItem                 string
+	SetActiveChangelistMenuItem           string
+	SetActiveChangelistTitle              string
+	RenameChangelistMenuItem              string
+	RenameChangelistTitle                 string
+	RenameChangelistPrompt                string
+	DeleteChangelistMenuItem              string
+	DeleteChangelistTitle                 string
+	InvalidChangelistName                 string
 	MergeConflictsTitle                   string
 	MergeConflictDescription_DD           string
 	MergeConflictDescription_AU           string
@@ -1258,6 +1273,21 @@ func EnglishTranslationSet() *TranslationSet {
 		FilterLabelUntrackedFiles:            "(only untracked)",
 		FilterLabelConflictingFiles:          "(only conflicting)",
 		DefaultChangelistName:                "Default",
+		ChangelistOptions:                    "Changelist options",
+		ChangelistOptionsTooltip:             "View and manage changelists: named groups that partition your changed files, like in JetBrains IDEs.",
+		NewChangelistMenuItem:                "New changelist",
+		NewChangelistPrompt:                  "Enter a name for the new changelist",
+		MoveToChangelistMenuItem:             "Move selected file(s) to changelist",
+		MoveToChangelistTitle:                "Move to changelist",
+		MoveToDefaultMenuItem:                "Default (unassign)",
+		SetActiveChangelistMenuItem:          "Set active changelist",
+		SetActiveChangelistTitle:             "Select the active changelist",
+		RenameChangelistMenuItem:             "Rename changelist",
+		RenameChangelistTitle:                "Select changelist to rename",
+		RenameChangelistPrompt:               "Rename changelist '{{.name}}'",
+		DeleteChangelistMenuItem:             "Delete changelist",
+		DeleteChangelistTitle:                "Select changelist to delete",
+		InvalidChangelistName:                "Cannot use changelist name '{{.name}}': it's empty or already in use",
 		NoChangedFiles:                       "No changed files",
 		SoftReset:                            "Soft reset",
 		AlreadyCheckedOutBranch:              "You have already checked out this branch",

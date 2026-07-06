@@ -206,6 +206,13 @@ func (self *FilesController) GetKeybindings(opts types.KeybindingsOpts) []*types
 			Tooltip:           self.c.Tr.ExpandAllTooltip,
 			GetDisabledReason: self.require(self.isInTreeMode),
 		},
+		{
+			Keys:        opts.GetKeys(opts.Config.Files.ViewChangelistOptions),
+			Handler:     self.openChangelistMenu,
+			Description: self.c.Tr.ChangelistOptions,
+			Tooltip:     self.c.Tr.ChangelistOptionsTooltip,
+			OpensMenu:   true,
+		},
 	}
 }
 

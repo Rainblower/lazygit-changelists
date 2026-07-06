@@ -82,6 +82,7 @@ _This file is auto-generated. To update, make the changes in the pkg/i18n direct
 | `` f `` | Fetch | Fetch changes from remote. |
 | `` - `` | Collapse all files | Collapse all directories in the files tree |
 | `` = `` | Vouw alle bestanden uit | Vouw alle mappen in de bestandsstructuur uit |
+| `` <ctrl+l> `` | Changelist options | View and manage changelists: named groups that partition your changed files, like in JetBrains IDEs. |
 | `` 0 `` | Focus main view |  |
 | `` / `` | Filter the current view by text |  |
 

@@ -82,6 +82,7 @@ _This file is auto-generated. To update, make the changes in the pkg/i18n direct
 | `` f `` | Buscar | Buscar alterações do controle remoto. |
 | `` - `` | Recolher todos os arquivos | Recolher todos os diretórios na árvore de arquivos |
 | `` = `` | Expandir todos os arquivos | Expandir todos os diretórios na árvore do arquivo |
+| `` <ctrl+l> `` | Changelist options | View and manage changelists: named groups that partition your changed files, like in JetBrains IDEs. |
 | `` 0 `` | Focar visualização principal |  |
 | `` / `` | Filtrar a visualização atual por texto |  |
 

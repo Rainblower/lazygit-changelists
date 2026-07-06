@@ -756,6 +756,7 @@ keybinding:
     copyFileInfoToClipboard: "y"
     collapseAll: '-'
     expandAll: =
+    viewChangelistOptions: <c-l>
   branches:
     createPullRequest: o
     viewPullRequestOptions: O
