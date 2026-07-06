@@ -107,6 +107,8 @@ type TranslationSet struct {
 	DeleteChangelistTitle                 string
 	InvalidChangelistName                 string
 	ChangelistHeaderNoFileAction          string
+	CommitSpansChangelistsTitle           string
+	CommitSpansChangelistsPrompt          string
 	MergeConflictsTitle                   string
 	MergeConflictDescription_DD           string
 	MergeConflictDescription_AU           string
@@ -1290,6 +1292,8 @@ func EnglishTranslationSet() *TranslationSet {
 		DeleteChangelistTitle:                "Select changelist to delete",
 		InvalidChangelistName:                "Cannot use changelist name '{{.name}}': it's empty or already in use",
 		ChangelistHeaderNoFileAction:         "This action can't be run on a changelist header",
+		CommitSpansChangelistsTitle:          "Commit spans multiple changelists",
+		CommitSpansChangelistsPrompt:         "The staged files belong to more than one changelist. Commit them together anyway?",
 		NoChangedFiles:                       "No changed files",
 		SoftReset:                            "Soft reset",
 		AlreadyCheckedOutBranch:              "You have already checked out this branch",

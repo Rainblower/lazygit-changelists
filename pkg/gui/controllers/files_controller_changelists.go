@@ -8,6 +8,7 @@ import (
 	"github.com/jesseduffield/lazygit/pkg/gui/filetree"
 	"github.com/jesseduffield/lazygit/pkg/gui/types"
 	"github.com/jesseduffield/lazygit/pkg/utils"
+	"github.com/samber/lo"
 )
 
 // openChangelistMenu is the single entry point for all changelist operations.
@@ -189,6 +190,45 @@ func (self *FilesController) saveAndRerenderChangelists() error {
 	self.context().FileTreeViewModel.SetTree()
 	self.c.PostRefreshUpdate(self.context())
 	return nil
+}
+
+// commitWithChangelistCheck wraps a commit handler so that if the staged files
+// span more than one changelist (Default counts as one), the user is warned and
+// asked to confirm before the commit proceeds. A commit is meant to correspond
+// to a single changelist, so mixing them is usually a mistake — but we only warn
+// (not block), since sometimes it's intentional.
+func (self *FilesController) commitWithChangelistCheck(commitFn func() error) func() error {
+	return func() error {
+		if len(self.stagedChangelistNames()) <= 1 {
+			return commitFn()
+		}
+
+		self.c.Confirm(types.ConfirmOpts{
+			Title:         self.c.Tr.CommitSpansChangelistsTitle,
+			Prompt:        self.c.Tr.CommitSpansChangelistsPrompt,
+			HandleConfirm: commitFn,
+		})
+		return nil
+	}
+}
+
+// stagedChangelistNames returns the distinct changelists (by name, with Default
+// as "") that the currently staged files belong to. Returns nil when no named
+// changelists exist, so the check is a no-op unless the feature is in use.
+func (self *FilesController) stagedChangelistNames() []string {
+	set := self.c.Model().Changelists
+	if set == nil || !set.HasNamedChangelists() {
+		return nil
+	}
+
+	seen := map[string]bool{}
+	for _, file := range self.c.Model().Files {
+		if file.HasStagedChanges {
+			seen[set.NameForPath(file.Path)] = true
+		}
+	}
+
+	return lo.Keys(seen)
 }
 
 // notOnChangelistHeader disables file-specific actions (open, diff, ignore,

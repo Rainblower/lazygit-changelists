@@ -62,14 +62,14 @@ func (self *FilesController) GetKeybindings(opts types.KeybindingsOpts) []*types
 		},
 		{
 			Keys:            opts.GetKeys(opts.Config.Files.CommitChanges),
-			Handler:         self.c.Helpers().WorkingTree.HandleCommitPress,
+			Handler:         self.commitWithChangelistCheck(self.c.Helpers().WorkingTree.HandleCommitPress),
 			Description:     self.c.Tr.Commit,
 			Tooltip:         self.c.Tr.CommitTooltip,
 			DisplayOnScreen: true,
 		},
 		{
 			Keys:        opts.GetKeys(opts.Config.Files.CommitChangesWithoutHook),
-			Handler:     self.c.Helpers().WorkingTree.HandleWIPCommitPress,
+			Handler:     self.commitWithChangelistCheck(self.c.Helpers().WorkingTree.HandleWIPCommitPress),
 			Description: self.c.Tr.CommitChangesWithoutHook,
 		},
 		{
@@ -79,7 +79,7 @@ func (self *FilesController) GetKeybindings(opts types.KeybindingsOpts) []*types
 		},
 		{
 			Keys:        opts.GetKeys(opts.Config.Files.CommitChangesWithEditor),
-			Handler:     self.c.Helpers().WorkingTree.HandleCommitEditorPress,
+			Handler:     self.commitWithChangelistCheck(self.c.Helpers().WorkingTree.HandleCommitEditorPress),
 			Description: self.c.Tr.CommitChangesWithEditor,
 		},
 		{
